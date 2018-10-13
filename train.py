@@ -3,6 +3,8 @@
 from utils import dataset
 from utils import helpers
 
+import numpy as np
+
 TRAIN_DATASET = 'data/train.csv'
 TEST_DATA = 'data/test.csv'
 
@@ -12,15 +14,18 @@ if __name__ == '__main__':
     # Y_train is array of 0/1 values based on "Prediction" feature (s -> 1, b -> 0)
     # we're ignoring "Id" feature
 
+    lamdas = np.logspace(-4, 2, 30)
+
     Y_train, X_train, indexes = dataset.load_csv_data(TRAIN_DATASET)
 
-    w = helpers.ridge(Y_train, X_train ,1)
-    print(len(w), w)
-
-    loss = helpers.compute_loss(Y_train, X_train, w)
-    print("loss: ", loss)
+    X_train = dataset.preprocess_dataset(X_train)
+    for lamda_ in lamdas:
+        w = helpers.ridge(Y_train, X_train, lamda_)
+        loss = helpers.compute_loss(Y_train, X_train, w)
+        print("loss: {} lamda_: {}".format(loss, lamda_))
 
     Y_test, X_test, indexes = dataset.load_csv_data(TEST_DATA)
+    X_test = dataset.preprocess_dataset(X_test)
     Y_test = X_test.dot(w)
     print(Y_test[:10])
 
