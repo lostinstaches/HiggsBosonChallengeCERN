@@ -1,8 +1,10 @@
 #!/usr/bin/env python
 
 from utils import dataset
+from utils import helpers
 
 TRAIN_DATASET = 'data/train.csv'
+
 
 
 if __name__ == '__main__':
@@ -12,6 +14,12 @@ if __name__ == '__main__':
     X_train, Y_train = dataset.load_train_dataset(TRAIN_DATASET)
     print(X_train[:10])
     print(Y_train[:10])
+
+    w = helpers.ridge(Y_train, X_train ,1)
+    print(len(w), w)
+
+    loss = helpers.compute_loss(Y_train, X_train, w)
+    print("loss: ", loss)
 
     # X_train, Y_train = load_train_dataset(TRAIN_DATASET) NxD
     # X_train, Y_train = clean_dataset("METHOD_NAME", X_train, Y_train)
