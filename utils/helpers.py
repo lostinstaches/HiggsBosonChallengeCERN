@@ -2,8 +2,18 @@
 
 import numpy as np
 
+def least_squares_GD():
+    pass
 
-def ridge(y, tx, lamb):
+def least_squares_SGD():
+    pass
+
+def least_squares():
+    pass
+
+
+
+def ridge_regression(y, tx, lamb):
     """implement ridge regression."""
     aI = lamb * np.identity(tx.shape[1])
     a = tx.T.dot(tx) + aI
