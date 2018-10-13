@@ -29,8 +29,8 @@ def load_csv_data(data_path, sub_sample=False):
     """Loads data and returns y (class labels), tX (features) and ids (event ids)"""
     with open(data_path, "r") as f:
         debug_l = [x.strip() for x in f.readlines()[0].split(",")]
-    for idx, fname in enumerate(debug_l):
-        print("{} - {}".format(fname, idx))
+    #for idx, fname in enumerate(debug_l):
+        #print("{} - {}".format(fname, idx))
 
     y = np.genfromtxt(data_path, delimiter=",", skip_header=1, dtype=str, usecols=1)
     x = np.genfromtxt(data_path, delimiter=",", skip_header=1)
@@ -95,6 +95,41 @@ def preprocess_dataset(X):
     X = clean_dataset(X)
     # X = normalize_dataset(X)
     return X
+
+def split_data(y, x, ratio, seed=1):
+    row_amount = y.shape[0]
+
+    y_list = y.tolist()
+    x_list = x.tolist()
+
+    y_validation = []
+    y_train = []
+
+    x_validation = []
+    x_train = []
+
+    amount_of_row_to_train = int(row_amount * ratio)
+    random_indices = np.random.permutation(row_amount)
+    ind_of_row_to_train = random_indices[:amount_of_row_to_train]
+
+    for i in range(row_amount):
+        if i in ind_of_row_to_train:
+            #Train
+            y_train.append(y_list[i])
+            x_train.append(x_list[i])
+        else:
+            #Validation
+            y_validation.append(y_list[i])
+            x_validation.append(x_list[i])
+
+    y_train = np.array(y_train)
+    y_validation = np.array(y_validation)
+
+    x_train = np.array(x_train)
+    x_validation = np.array(x_validation)
+
+    return y_train, y_validation, x_train, x_validation
+
 
 def load_train_dataset(train_csv):
     X_train = []
