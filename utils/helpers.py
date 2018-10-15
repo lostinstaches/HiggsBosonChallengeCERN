@@ -2,11 +2,16 @@
 
 import numpy as np
 
+def compute_gradient(y, tx, w):
+    loss = y - tx.dot(w)
+    grad = -tx.T.dot(loss) / len(loss)
+    return grad, loss
+
 # y  - target data
 # tx - independend data
 # initial_w - vektor of parameters to optimize ([w0, w1, ..])
-# max_iters - stepsize of optimization (eg 100)
-# gamma     - learning rate (eg 0.02)
+# max_iters - stepsize of optimization 
+# gamma     - learning rate )
 def least_squares_GD(y, tx, initial_w, max_iters, gamma):
     """Gradient descent algorithm using mse."""
     # Define parameters to store w's for each step for later visualization
@@ -24,16 +29,36 @@ def least_squares_GD(y, tx, initial_w, max_iters, gamma):
         # gradient w's by descent update all parameters
         w = w - gamma * grad
         # store w 
-        ws.append(w)
+        ws = w
         # store loss
-        losses.append(curr_mse_loss)
-        print("Gradient Descent({bi}/{ti}): loss={l}, w0={w0}, w1={w1}".format(
-              bi=n_iter, ti=max_iters - 1, l=curr_mse_loss, w0=w[0], w1=w[1]))
-
+        losses = curr_mse_loss
+        print("Gradient Descent({bi}/{ti}): gamma={g} mse-loss={l} ".format(bi=n_iter, ti=max_iters - 1, l=curr_mse_loss, w=w, g=gamma))
     return losses, ws
 
-def least_squares_SGD():
-    pass
+def least_squares_SGD(y, tx, initial_w, batch_size, max_iters, gamma):
+    """Stochastic gradient descent."""
+    # Define parameters to store w and loss
+    ws = [initial_w]
+    losses = []
+    w = initial_w
+    # optimization loop
+    for n_iter in range(max_iters):
+        # choose random batch sample set (size according to batch_size)
+        for y_batch, tx_batch in batch_iter(y, tx, batch_size=batch_size, num_batches=1):
+            # compute a stochastic gradient and loss for the random sample batches (n = batch_size)
+            # loss gets ignored here because this is only a sample set of the whole data
+            grad, _ = compute_gradient(y_batch, tx_batch, w)
+            # update w through the stochastic gradient update
+            w = w - gamma * grad
+            # calculate loss over all data
+            loss = compute_loss(y, tx, w)
+            # store w and loss
+            #ws.append(w)
+            #losses.append(loss)
+            ws = w
+
+        print("SGD({bi}/{ti}): loss={l}, w0={w0}, w1={w1}".format(bi=n_iter, ti=max_iters - 1, l=loss, w0=w[0], w1=w[1]))
+    return losses, ws
 
 def least_squares(y, tx):
     #normal equations
