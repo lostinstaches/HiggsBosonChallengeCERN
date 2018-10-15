@@ -2,8 +2,35 @@
 
 import numpy as np
 
-def least_squares_GD():
-    pass
+# y  - target data
+# tx - independend data
+# initial_w - vektor of parameters to optimize ([w0, w1, ..])
+# max_iters - stepsize of optimization (eg 100)
+# gamma     - learning rate (eg 0.02)
+def least_squares_GD(y, tx, initial_w, max_iters, gamma):
+    """Gradient descent algorithm using mse."""
+    # Define parameters to store w's for each step for later visualization
+    ws = [initial_w]
+    # Define parameter to store all mse losses for each step for later visualization
+    losses = []
+    # first w values (here [0,0])
+    w = initial_w
+    # optimization loop
+    for n_iter in range(max_iters):
+        # compute loss, gradient
+        grad, err = compute_gradient(y, tx, w)
+        # compute single value mse of all errors err (is a vector of each error for each datapoint)
+        curr_mse_loss = calculate_mse(err)
+        # gradient w's by descent update all parameters
+        w = w - gamma * grad
+        # store w 
+        ws.append(w)
+        # store loss
+        losses.append(curr_mse_loss)
+        print("Gradient Descent({bi}/{ti}): loss={l}, w0={w0}, w1={w1}".format(
+              bi=n_iter, ti=max_iters - 1, l=curr_mse_loss, w0=w[0], w1=w[1]))
+
+    return losses, ws
 
 def least_squares_SGD():
     pass
