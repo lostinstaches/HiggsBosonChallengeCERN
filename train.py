@@ -30,22 +30,24 @@ if __name__ == '__main__':
     w_initial = np.zeros((_features), dtype=int)
     max_iters = 5000
 
-    '''
+    # just uncomment a block for a specific type
+    
     print("Mean Squared Error Gradient Descent")
     # best setting:max_iters 5000  Gradient Descent(14999/14999): gamma=7.4e-07 mse-loss=0.35792074222770376 
     gamma_MSEGD = 0.00000074
     # w is the last optimized vector of the algorithm (len(w)==30)
     gradient_losses, w = helpers.least_squares_GD(Y_train, X_train, w_initial, max_iters, gamma_MSEGD) 
-    '''
-
     
+
+    '''
     print("Stochastic Mean Squared Error Gradient Descent")
-    # best setting even with batch size = every row .. SGD(2250/4999): loss=0.36466753543609026 super costly
+    # best setting even with batch size = every row .. SGD(4999/4999): loss=0.36089722718771117 super costly
     gamma_SMSEGD = 0.00000074
     batch_size = 100000000
     sgd_losses, w = helpers.least_squares_SGD(Y_train, X_train, w_initial, batch_size, max_iters, gamma_SMSEGD)
     '''
-    
+
+    '''
     print("RIDGE")
     # ridge regression
     w = helpers.ridge_regression(Y_train, X_train, lamda_)
