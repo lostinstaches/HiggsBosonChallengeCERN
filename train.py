@@ -30,6 +30,8 @@ if __name__ == '__main__':
     Y_train[np.where(Y_train==-1)] = 0.0
     print(X_train.shape)
 
+    for col in range(X_train.shape[1]):
+        print("Feature {} relevance is {}".format(col, np.sum(X_train[:,col] == -999.0) / X_train.shape[0]))
     # pre process train data
     X_train = dataset.preprocess_dataset(X_train)
 

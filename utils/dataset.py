@@ -110,6 +110,7 @@ def preprocess_dataset(X):
                 # X[r_idx][c_idx] = np.random.randn()
                 X[r_idx][c_idx] = 0.0
     X = max_division(X)
+    X = mean_centering(X)
     return X
 
 def split_data(y, x, ratio, seed=1):
