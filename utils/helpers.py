@@ -100,11 +100,34 @@ def ridge_regression(y, tx, lamb):
     b = tx.T.dot(y)
     return np.linalg.solve(a, b)
 
+def logistic_function(z):
+    return np.exp(z) / (1 + np.exp(z))
 
-def logistic_regression():
-    pass
+def logistic_loss(x, w, y):
+    xw = np.dot(x, w)
+    log_term = np.log(np.exp(xw) + 1)
+    print("log_term shape {}".format(log_term.shape))
+    yxw_term = np.dot(y, xw)
+    return np.sum(log_term - yxw_term)
 
-def reg_logistic_regression():
+def logistic_gradient(x, w, y):
+    probs = logistic_function(np.dot(x, w))
+    return np.dot(x.T, probs-y)
+
+def logistic_regression(y, tx, initial_w, max_iters, gamma):
+    """Logistic regression"""
+    w = initial_w
+    for n_iter in range(max_iters):
+        for y_batch, tx_batch in batch_iter(y, tx, batch_size=32):
+            xw = tx_batch.dot(w)
+            preds = logistic_function(xw)
+            grad = logistic_gradient(tx_batch, w, y_batch)
+            w -= gamma * grad
+            if True:
+                print("iter {} loss {}".format(n_iter, logistic_loss(tx_batch, w, y_batch)))
+    return w
+
+def reg_logistic_regression(y, tx, lambda_, initial_w, max_iters, gamma):
     pass
 
 
