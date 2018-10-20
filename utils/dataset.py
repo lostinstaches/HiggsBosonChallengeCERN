@@ -92,43 +92,26 @@ def normalize_dataset(X):
     return X
 
 def preprocess_dataset(X):
-    X = clean_dataset(X)
+    # X = clean_dataset(X)
     # X = normalize_dataset(X)
+    means = np.median(X, axis=0)
+    print(means.shape)
+    for r_idx, row in enumerate(X):
+        for c_idx, col in enumerate(row):
+            if X[r_idx][c_idx] == -999.0:
+                # X[r_idx][c_idx] = np.random.randn()
+                X[r_idx][c_idx] = 0.0
     return X
 
 def split_data(y, x, ratio, seed=1):
-    row_amount = y.shape[0]
+    N = y.shape[0]
+    N_train = int(N * ratio)
 
-    y_list = y.tolist()
-    x_list = x.tolist()
+    random_indices = np.random.permutation(N)
+    train_indices = random_indices[:N_train]
+    val_indices  = random_indices[N_train:]
 
-    y_validation = []
-    y_train = []
-
-    x_validation = []
-    x_train = []
-
-    amount_of_row_to_train = int(row_amount * ratio)
-    random_indices = np.random.permutation(row_amount)
-    ind_of_row_to_train = random_indices[:amount_of_row_to_train]
-
-    for i in range(row_amount):
-        if i in ind_of_row_to_train:
-            #Train
-            y_train.append(y_list[i])
-            x_train.append(x_list[i])
-        else:
-            #Validation
-            y_validation.append(y_list[i])
-            x_validation.append(x_list[i])
-
-    y_train = np.array(y_train)
-    y_validation = np.array(y_validation)
-
-    x_train = np.array(x_train)
-    x_validation = np.array(x_validation)
-
-    return y_train, y_validation, x_train, x_validation
+    return y[train_indices], y[val_indices], x[train_indices], x[val_indices]
 
 
 def load_train_dataset(train_csv):

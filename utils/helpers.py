@@ -106,25 +106,45 @@ def logistic_function(z):
 def logistic_loss(x, w, y):
     xw = np.dot(x, w)
     log_term = np.log(np.exp(xw) + 1)
-    print("log_term shape {}".format(log_term.shape))
-    yxw_term = np.dot(y, xw)
+    yxw_term = y * xw
     return np.sum(log_term - yxw_term)
 
 def logistic_gradient(x, w, y):
     probs = logistic_function(np.dot(x, w))
     return np.dot(x.T, probs-y)
 
+def numeric_gradient(x, w, y, loss_f, eps=1e-5):
+    grad = np.zeros(w.shape[0], dtype=np.float32)
+    for i in range(w.shape[0]):
+        w_minus = w.copy()
+        w_minus[i] -= eps
+        w_plus = w.copy()
+        w_plus[i] += eps
+        f_x_minus = loss_f(x, w_minus, y)
+        f_x_plus = loss_f(x, w_plus, y)
+        grad[i] = (f_x_plus - f_x_minus) / (2.0 * eps)
+    return grad
+
 def logistic_regression(y, tx, initial_w, max_iters, gamma):
     """Logistic regression"""
     w = initial_w
     for n_iter in range(max_iters):
-        for y_batch, tx_batch in batch_iter(y, tx, batch_size=32):
+        for y_batch, tx_batch in batch_iter(y, tx, batch_size=32, num_batches=int(y.shape[0]/32)):
             xw = tx_batch.dot(w)
             preds = logistic_function(xw)
             grad = logistic_gradient(tx_batch, w, y_batch)
+            #numeric_grad = numeric_gradient(tx_batch, w, y_batch, logistic_loss)
+            #print("grad {}".format(grad))
+            #print("numeric_grad {}".format(numeric_gradient(tx_batch, w, y_batch, logistic_loss)))
+            #print("both subtracted {}".format(grad - numeric_grad))
             w -= gamma * grad
-            if True:
-                print("iter {} loss {}".format(n_iter, logistic_loss(tx_batch, w, y_batch)))
+        if n_iter % 100 == 0:
+            print("iter {} loss {}".format(n_iter, logistic_loss(tx_batch, w, y_batch)))
+            preds = logistic_function(tx.dot(w))
+            preds[preds >=  0.5] = 1.0
+            preds[preds < 0.5] = 0.0
+            print("Train accuracy {}".format(np.sum(preds == y) / y.shape[0]))
+            # print("w {}".format(w))
     return w
 
 def reg_logistic_regression(y, tx, lambda_, initial_w, max_iters, gamma):
