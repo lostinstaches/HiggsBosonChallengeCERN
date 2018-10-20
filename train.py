@@ -35,7 +35,7 @@ if __name__ == '__main__':
 
     # Add bias
     X_train = add_bias_column(X_train)
-    X_train = preprocessing.normalize(X_train, norm='l2')
+    # X_train = preprocessing.normalize(X_train, norm='l2')
     # X_train = poly.fit_transform(X_train)
 
     # split_data
@@ -79,7 +79,13 @@ if __name__ == '__main__':
     '''
     print(Y_train[:10])
 
-    w = helpers.logistic_regression(Y_train, X_train, np.zeros(X_train.shape[1]), 1000, 0.0001)
+    w = helpers.logistic_regression(Y_train, X_train, np.zeros(X_train.shape[1]), 1000, 0.005)
+    print("changing learning rate")
+    w = helpers.logistic_regression(Y_train, X_train, w, 1000, 0.001)
+    print("changing learning rate")
+    w = helpers.logistic_regression(Y_train, X_train, w, 1000, 0.0005)
+    print("changing learning rate")
+    w = helpers.logistic_regression(Y_train, X_train, w, 1000, 0.0001)
     valid_preds = helpers.logistic_function(X_validation.dot(w))
     valid_preds[valid_preds >=  0.5] = 1.0
     valid_preds[valid_preds < 0.5] = 0.0
@@ -95,7 +101,7 @@ if __name__ == '__main__':
     # pre process test data
     X_test = dataset.preprocess_dataset(X_test)
     X_test = add_bias_column(X_test)
-    X_test = preprocessing.normalize(X_test, norm='l2')
+    # X_test = preprocessing.normalize(X_test, norm='l2')
     # X_test = poly.fit_transform(X_test)
 
     # build results

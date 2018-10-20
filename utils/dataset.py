@@ -91,6 +91,14 @@ def normalize_dataset(X):
     X /= div
     return X
 
+def mean_centering(X):
+    mean = X.mean(axis=0)
+    return X - mean
+
+def max_division(X):
+    print("max is {}".format(np.max(X)))
+    return X / np.max(X)
+
 def preprocess_dataset(X):
     # X = clean_dataset(X)
     # X = normalize_dataset(X)
@@ -101,6 +109,7 @@ def preprocess_dataset(X):
             if X[r_idx][c_idx] == -999.0:
                 # X[r_idx][c_idx] = np.random.randn()
                 X[r_idx][c_idx] = 0.0
+    X = max_division(X)
     return X
 
 def split_data(y, x, ratio, seed=1):
