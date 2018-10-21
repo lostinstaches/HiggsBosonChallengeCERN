@@ -129,17 +129,17 @@ def logistic_regression(y, tx, initial_w, max_iters, gamma):
     """Logistic regression"""
     w = initial_w
     for n_iter in range(max_iters):
-        for y_batch, tx_batch in batch_iter(y, tx, batch_size=32, num_batches=int(y.shape[0]/32)):
+        for y_batch, tx_batch in batch_iter(y, tx, batch_size=128, num_batches=int(y.shape[0]/128)):
             xw = tx_batch.dot(w)
             preds = logistic_function(xw)
-            grad = logistic_gradient(tx_batch, w, y_batch)
+            grad = (1.0/128.0) * logistic_gradient(tx_batch, w, y_batch)
             #numeric_grad = numeric_gradient(tx_batch, w, y_batch, logistic_loss)
             #print("grad {}".format(grad))
             #print("numeric_grad {}".format(numeric_gradient(tx_batch, w, y_batch, logistic_loss)))
             #print("both subtracted {}".format(grad - numeric_grad))
             w -= gamma * grad
-        if n_iter % 100 == 0:
-            print("iter {} loss {}".format(n_iter, logistic_loss(tx_batch, w, y_batch)))
+        if n_iter % 10 == 0:
+            print("iter {} loss {}".format(n_iter, (1.0/128.0) * logistic_loss(tx_batch, w, y_batch)))
             preds = logistic_function(tx.dot(w))
             preds[preds >=  0.5] = 1.0
             preds[preds < 0.5] = 0.0

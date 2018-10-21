@@ -23,17 +23,23 @@ if __name__ == '__main__':
     # we're ignoring "Id" feature
 
     lamda_ = 5
-    ratio_for_splitting = 0.8
+    ratio_for_splitting = 0.9
 
+    features_to_keep = [0, 1, 2, 7, 19, 13, 3, 21, 11, 10, 16, 8, 4, 5, 17
+]
     # load the train data
     Y_train, X_train, indexes = dataset.load_csv_data(TRAIN_DATASET)
     Y_train[np.where(Y_train==-1)] = 0.0
     print(X_train.shape)
 
     for col in range(X_train.shape[1]):
-        print("Feature {} relevance is {}".format(col, np.sum(X_train[:,col] == -999.0) / X_train.shape[0]))
+        print("Feature {} emptiness is {}".format(col, np.sum(X_train[:,col] == -999.0) / X_train.shape[0]))
+    many_missing = []
+
     # pre process train data
     X_train = dataset.preprocess_dataset(X_train)
+    # X_train = dataset.delete_features(X_train, many_missing)
+    # X_train = dataset.keep_features(X_train, features_to_keep)
 
     # Add bias
     X_train = add_bias_column(X_train)
@@ -42,8 +48,8 @@ if __name__ == '__main__':
 
     # split_data
     Y_train, Y_validation, X_train, X_validation = dataset.split_data(Y_train, X_train, ratio_for_splitting)
-    print(Y_train.shape)
-    print(Y_validation.shape)
+    # print(Y_train.shape)
+    # print(Y_validation.shape)
 
     # _features = X_train.shape[1]
     # w_initial = np.zeros((_features), dtype=int)
@@ -81,27 +87,29 @@ if __name__ == '__main__':
     '''
     print(Y_train[:10])
 
-    w = helpers.logistic_regression(Y_train, X_train, np.zeros(X_train.shape[1]), 1000, 0.005)
-    print("changing learning rate")
-    w = helpers.logistic_regression(Y_train, X_train, w, 1000, 0.001)
-    print("changing learning rate")
-    w = helpers.logistic_regression(Y_train, X_train, w, 1000, 0.0005)
-    print("changing learning rate")
-    w = helpers.logistic_regression(Y_train, X_train, w, 1000, 0.0001)
-    valid_preds = helpers.logistic_function(X_validation.dot(w))
-    valid_preds[valid_preds >=  0.5] = 1.0
-    valid_preds[valid_preds < 0.5] = 0.0
-    print("Valid accuracy {}".format(np.sum(valid_preds == Y_validation) / Y_validation.shape[0]))
-
-    #clf = SGDClassifier(loss='log', alpha=0.00005, fit_intercept=True, max_iter=1000, verbose=1, n_iter_no_change=100)
-    # clf = LogisticRegression(solver='newton-cg', C=1000.0, multi_class='ovr', verbose=1, max_iter=1000)
+    # clf = SGDClassifier(loss='log', alpha=0.00005, fit_intercept=True, max_iter=1000, verbose=1, n_iter_no_change=100)
+    #lf = LogisticRegression(solver='newton-cg', C=1000.0, multi_class='ovr', verbose=1, max_iter=1000)
     # clf.fit(X_train, Y_train)
+
+    w = helpers.logistic_regression(Y_train, X_train, np.zeros(X_train.shape[1]), 1000, 0.0005)
+    #w2 = helpers.logistic_regression(Y_train, X_train, np.random.randn(X_train.shape[1]), 1000, 0.0001)
+    #w3 = helpers.logistic_regression(Y_train, X_train, np.random.randn(X_train.shape[1]), 1000, 0.0001)
+    #w = (1.0 / 3.0) * (w + w2 + w3)
+    # print("changing learning rate")
+    # w = helpers.logistic_regression(Y_train, X_train, w, 1000, 0.001)
+
+    valid_preds = helpers.logistic_function(X_validation.dot(w))
+    valid_preds[valid_preds >= 0.5] = 1.0
+    valid_preds[valid_preds < 0.5] = 0.0
+    print("Final accuracy {}".format(np.sum(valid_preds == Y_validation) / Y_validation.shape[0]))
 
     # load test data
     Y_test, X_test, indexes = dataset.load_csv_data(TEST_DATA)
 
     # pre process test data
     X_test = dataset.preprocess_dataset(X_test)
+    # X_test = dataset.delete_features(X_train, many_missing)
+    # X_test = dataset.keep_features(X_test, features_to_keep)
     X_test = add_bias_column(X_test)
     # X_test = preprocessing.normalize(X_test, norm='l2')
     # X_test = poly.fit_transform(X_test)

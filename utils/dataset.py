@@ -99,19 +99,52 @@ def max_division(X):
     print("max is {}".format(np.max(X)))
     return X / np.max(X)
 
+def std_normalization(X):
+    return X / np.std(X, axis=0)
+
+def pca_and_whitening(X):
+    X = mean_centering(X)
+    cov = np.dot(X.T, X) / X.shape[0]
+    U,S,V = np.linalg.svd(cov)
+    Xrot = np.dot(X, U)
+    Xwhite = Xrot / np.sqrt(S + 1e-5)
+    return Xwhite
+
 def preprocess_dataset(X):
     # X = clean_dataset(X)
     # X = normalize_dataset(X)
-    means = np.median(X, axis=0)
-    print(means.shape)
+    medians = np.median(X, axis=0)
     for r_idx, row in enumerate(X):
         for c_idx, col in enumerate(row):
             if X[r_idx][c_idx] == -999.0:
                 # X[r_idx][c_idx] = np.random.randn()
                 X[r_idx][c_idx] = 0.0
-    X = max_division(X)
     X = mean_centering(X)
+    X = std_normalization(X)
+    # X = pca_and_whitening(X)
     return X
+
+def delete_features(X, features_to_delete):
+    features_to_delete = set(features_to_delete)
+    final_features_num = X.shape[1] - len(features_to_delete)
+    new_X = np.zeros((X.shape[0], final_features_num), dtype=np.float32)
+    cur_f = 0
+    for f in range(X.shape[1]):
+        if f not in features_to_delete:
+            new_X[:, cur_f] = X[:, f]
+            cur_f += 1
+    return new_X
+
+def keep_features(X, features_to_keep):
+    features_to_keep = set(features_to_keep)
+    final_features_num = len(features_to_keep)
+    new_X = np.zeros((X.shape[0], final_features_num), dtype=np.float32)
+    cur_f = 0
+    for f in range(X.shape[1]):
+        if f in features_to_keep:
+            new_X[:, cur_f] = X[:, f]
+            cur_f += 1
+    return new_X
 
 def split_data(y, x, ratio, seed=1):
     N = y.shape[0]
