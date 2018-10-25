@@ -10,6 +10,27 @@ TEST_DATA = 'data/test.csv'
 
 
 
+def msegc(Y_train, X_train, w_initial, max_iters, gamma_MSEGD=0.00000074):
+    print("Mean Squared Error Gradient Descent")
+    # best setting:max_iters 5000  Gradient Descent(14999/14999): gamma=7.4e-07 mse-loss=0.35792074222770376
+    #gamma_MSEGD = 0.00000074
+    # w is the last optimized vector of the algorithm (len(w)==30)
+    gradient_losses, w = helpers.least_squares_GD(Y_train, X_train, w_initial, max_iters, gamma_MSEGD)
+    return gradient_losses, w
+
+def smsegd(Y_train, X_train, w_initial, batch_size=100000000, max_iters, gamma_MSEGD=0.00000074):
+    print("Stochastic Mean Squared Error Gradient Descent")
+    # best setting even with batch size = every row .. SGD(4999/4999): loss=0.36089722718771117 super costly
+    #gamma_SMSEGD = 0.00000074
+    #batch_size = 100000000
+    sgd_losses, w = helpers.least_squares_SGD(Y_train, X_train, w_initial, batch_size, max_iters, gamma_SMSEGD)
+    return sgd_losses, w
+
+def ridge_regr():
+    print("Ridge regression")
+    w = helpers.ridge_regression(Y_train, X_train, lamda_)
+    return w
+
 if __name__ == '__main__':
     # Y_train is array of 0/1 values based on "Prediction" feature (s -> 1, b -> 0)
     # we're ignoring "Id" feature
@@ -31,13 +52,13 @@ if __name__ == '__main__':
     max_iters = 5000
 
     # just uncomment a block for a specific type
-    
+
     print("Mean Squared Error Gradient Descent")
-    # best setting:max_iters 5000  Gradient Descent(14999/14999): gamma=7.4e-07 mse-loss=0.35792074222770376 
+    # best setting:max_iters 5000  Gradient Descent(14999/14999): gamma=7.4e-07 mse-loss=0.35792074222770376
     gamma_MSEGD = 0.00000074
     # w is the last optimized vector of the algorithm (len(w)==30)
-    gradient_losses, w = helpers.least_squares_GD(Y_train, X_train, w_initial, max_iters, gamma_MSEGD) 
-    
+    gradient_losses, w = helpers.least_squares_GD(Y_train, X_train, w_initial, max_iters, gamma_MSEGD)
+
 
     '''
     print("Stochastic Mean Squared Error Gradient Descent")
@@ -67,7 +88,7 @@ if __name__ == '__main__':
     # pre process test data
     X_test = dataset.preprocess_dataset(X_test)
 
-    # build results
+    # build resultsIDGE
     Y_test = X_test.dot(w)
 
     # parse results
