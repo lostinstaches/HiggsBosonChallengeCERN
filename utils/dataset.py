@@ -9,6 +9,7 @@ IDX24_DEPENDENT = [6, 7, 8, 14, 28, 29, 30]
 IDX24_DEPENDENT = [e - 2 for e in IDX24_DEPENDENT]
 IDX24_DEPENDENT = set(IDX24_DEPENDENT)
 
+
 class FeatureMetadata(object):
     def __init__(self):
         self.feature_idx = -1
@@ -108,7 +109,40 @@ def pca_and_whitening(X):
     U,S,V = np.linalg.svd(cov)
     Xrot = np.dot(X, U)
     Xwhite = Xrot / np.sqrt(S + 1e-5)
+    # Xwhite = Xwhite[:,:20]
     return Xwhite
+
+def feature_engineering(X):
+    PRI_JET_NUM_COL = 22
+
+    pri_jet_num_0 = (X[:,PRI_JET_NUM_COL] == 0).astype(np.float32)
+    pri_jet_num_1 = (X[:,PRI_JET_NUM_COL] == 1).astype(np.float32)
+    pri_jet_num_2 = (X[:,PRI_JET_NUM_COL] == 2).astype(np.float32)
+    pri_jet_num_3 = (X[:,PRI_JET_NUM_COL] == 3).astype(np.float32)
+
+    new_features = [pri_jet_num_0, pri_jet_num_1, pri_jet_num_2, pri_jet_num_3]
+
+    pri_jet_bigger_than_1 = [4, 5, 6, 12, 26, 27, 28]
+    for col in pri_jet_bigger_than_1:
+        new_feature = X[:,col] * pri_jet_num_2 + X[:,col] * pri_jet_num_3
+        new_features.append(new_feature)
+
+    new_features_num = X.shape[1] + len(new_features)
+    new_X = np.random.randn(X.shape[0], new_features_num)
+
+    for i in range(len(new_features)):
+        new_X[:, X.shape[1]+i] = new_features[i]
+
+    return new_X
+
+
+
+def build_poly(x, degree):
+    """polynomial basis functions for input data x, for j=0 up to j=degree."""
+    new_X = np.zeros((x.shape[0], x.shape[1] * (degree)))
+    for i in range(1, degree+1):
+        new_X[:,x.shape[1]*(i-1):x.shape[1]*(i)] = x ** i
+    return new_X
 
 def preprocess_dataset(X):
     # X = clean_dataset(X)
@@ -119,6 +153,8 @@ def preprocess_dataset(X):
             if X[r_idx][c_idx] == -999.0:
                 # X[r_idx][c_idx] = np.random.randn()
                 X[r_idx][c_idx] = 0.0
+    # X = feature_engineering(X)
+    X = build_poly(X, 6)
     X = mean_centering(X)
     X = std_normalization(X)
     # X = pca_and_whitening(X)

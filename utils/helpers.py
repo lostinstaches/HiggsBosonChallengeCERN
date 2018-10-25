@@ -2,6 +2,15 @@
 
 import numpy as np
 
+X_VALID = None
+Y_VALID = None
+
+def set_valid(x, y):
+    global X_VALID
+    global Y_VALID
+    X_VALID = x
+    Y_VALID = y
+
 def compute_gradient(y, tx, w):
     loss = y - tx.dot(w)
     grad = -tx.T.dot(loss) / len(loss)
@@ -46,6 +55,14 @@ def batch_iter(y, tx, batch_size, num_batches=1, shuffle=True):
         <DO-SOMETHING>
     """
     data_size = len(y)
+
+    # Efficient implementation of SGD
+    if batch_size == 1 and num_batches == 1:
+        ind = np.random.randint(0, data_size)
+        chosen_y = np.array([y[ind]])
+        chosen_x = tx[ind]
+        chosen_x = chosen_x[np.newaxis, :]
+        yield chosen_y, chosen_x
     
     if shuffle:
         shuffle_indices = np.random.permutation(np.arange(data_size))
@@ -103,15 +120,17 @@ def ridge_regression(y, tx, lamb):
 def logistic_function(z):
     return np.exp(z) / (1 + np.exp(z))
 
-def logistic_loss(x, w, y):
+def logistic_loss(x, w, y, reg=0.0):
+    N = y.shape[0]
     xw = np.dot(x, w)
     log_term = np.log(np.exp(xw) + 1)
     yxw_term = y * xw
-    return np.sum(log_term - yxw_term)
+    return (1.0 / N) * np.sum(log_term - yxw_term) + (reg / (2 * N)) * np.dot(w, w)
 
-def logistic_gradient(x, w, y):
+def logistic_gradient(x, w, y, reg=0.0):
+    N = y.shape[0]
     probs = logistic_function(np.dot(x, w))
-    return np.dot(x.T, probs-y)
+    return (1.0 / N) * np.dot(x.T, probs-y) + (reg / N) * w
 
 def numeric_gradient(x, w, y, loss_f, eps=1e-5):
     grad = np.zeros(w.shape[0], dtype=np.float32)
@@ -129,26 +148,53 @@ def logistic_regression(y, tx, initial_w, max_iters, gamma):
     """Logistic regression"""
     w = initial_w
     for n_iter in range(max_iters):
-        for y_batch, tx_batch in batch_iter(y, tx, batch_size=128, num_batches=int(y.shape[0]/128)):
-            xw = tx_batch.dot(w)
-            preds = logistic_function(xw)
-            grad = (1.0/128.0) * logistic_gradient(tx_batch, w, y_batch)
-            #numeric_grad = numeric_gradient(tx_batch, w, y_batch, logistic_loss)
-            #print("grad {}".format(grad))
-            #print("numeric_grad {}".format(numeric_gradient(tx_batch, w, y_batch, logistic_loss)))
-            #print("both subtracted {}".format(grad - numeric_grad))
-            w -= gamma * grad
-        if n_iter % 10 == 0:
-            print("iter {} loss {}".format(n_iter, (1.0/128.0) * logistic_loss(tx_batch, w, y_batch)))
+        xw = tx.dot(w)
+        preds = logistic_function(xw)
+        grad = logistic_gradient(tx, w, y)
+        #print(grad)
+        #numeric_grad = numeric_gradient(tx_batch, w, y_batch, logistic_loss)
+        #print("grad {}".format(grad))
+        #print("numeric_grad {}".format(numeric_gradient(tx_batch, w, y_batch, logistic_loss)))
+        #print("both subtracted {}".format(grad - numeric_grad))
+        w -= gamma * grad
+        if n_iter % 100 == 0:
+            print("iter {} loss {}".format(n_iter, logistic_loss(tx, w, y)))
             preds = logistic_function(tx.dot(w))
             preds[preds >=  0.5] = 1.0
             preds[preds < 0.5] = 0.0
             print("Train accuracy {}".format(np.sum(preds == y) / y.shape[0]))
+            if X_VALID is not None:
+                preds = logistic_function(X_VALID.dot(w))
+                preds[preds >=  0.5] = 1.0
+                preds[preds < 0.5] = 0.0
+                print("Valid accuracy {}".format(np.sum(preds == Y_VALID) / Y_VALID.shape[0]))
             # print("w {}".format(w))
     return w
 
 def reg_logistic_regression(y, tx, lambda_, initial_w, max_iters, gamma):
-    pass
+    """Logistic regression"""
+    w = initial_w
+    for n_iter in range(max_iters):
+        xw = tx.dot(w)
+        preds = logistic_function(xw)
+        grad = logistic_gradient(tx, w, y, reg=lambda_)
+        #numeric_grad = numeric_gradient(tx_batch, w, y_batch, logistic_loss)
+        #print("grad {}".format(grad))
+        #print("numeric_grad {}".format(numeric_gradient(tx_batch, w, y_batch, logistic_loss)))
+        #print("both subtracted {}".format(grad - numeric_grad))
+        w -= gamma * grad
+        if n_iter % 100 == 0:
+            print("iter {} loss {}".format(n_iter, logistic_loss(tx, w, y, reg=lambda_)))
+            preds = logistic_function(tx.dot(w))
+            preds[preds >=  0.5] = 1.0
+            preds[preds < 0.5] = 0.0
+            print("Train accuracy {}".format(np.sum(preds == y) / y.shape[0]))
+            if X_VALID is not None:
+                preds = logistic_function(X_VALID.dot(w))
+                preds[preds >=  0.5] = 1.0
+                preds[preds < 0.5] = 0.0
+                print("Valid accuracy {}".format(np.sum(preds == Y_VALID) / Y_VALID.shape[0]))
+    return w
 
 
 def calculate_mse(e):

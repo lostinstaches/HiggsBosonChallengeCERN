@@ -23,10 +23,11 @@ if __name__ == '__main__':
     # we're ignoring "Id" feature
 
     lamda_ = 5
-    ratio_for_splitting = 0.9
+    ratio_for_splitting = 0.8
 
-    features_to_keep = [0, 1, 2, 7, 19, 13, 3, 21, 11, 10, 16, 8, 4, 5, 17
-]
+    #features_to_keep = [0,1,2,6,11,13,17]
+    features_to_delete = [14, 17, 18, 21, 7]
+    features_to_delete = [14, 17, 18]
     # load the train data
     Y_train, X_train, indexes = dataset.load_csv_data(TRAIN_DATASET)
     Y_train[np.where(Y_train==-1)] = 0.0
@@ -34,12 +35,11 @@ if __name__ == '__main__':
 
     for col in range(X_train.shape[1]):
         print("Feature {} emptiness is {}".format(col, np.sum(X_train[:,col] == -999.0) / X_train.shape[0]))
-    many_missing = []
 
     # pre process train data
+    X_train = dataset.delete_features(X_train, features_to_delete)
     X_train = dataset.preprocess_dataset(X_train)
-    # X_train = dataset.delete_features(X_train, many_missing)
-    # X_train = dataset.keep_features(X_train, features_to_keep)
+    #X_train = dataset.keep_features(X_train, features_to_keep)
 
     # Add bias
     X_train = add_bias_column(X_train)
@@ -48,6 +48,7 @@ if __name__ == '__main__':
 
     # split_data
     Y_train, Y_validation, X_train, X_validation = dataset.split_data(Y_train, X_train, ratio_for_splitting)
+    helpers.set_valid(X_validation, Y_validation)
     # print(Y_train.shape)
     # print(Y_validation.shape)
 
@@ -85,40 +86,74 @@ if __name__ == '__main__':
     loss_val = helpers.compute_loss(Y_validation, X_validation, w)
     print("Loss for validation data is: ", loss_val)
     '''
-    print(Y_train[:10])
+    print(X_train.shape[1])
 
     # clf = SGDClassifier(loss='log', alpha=0.00005, fit_intercept=True, max_iter=1000, verbose=1, n_iter_no_change=100)
     #lf = LogisticRegression(solver='newton-cg', C=1000.0, multi_class='ovr', verbose=1, max_iter=1000)
     # clf.fit(X_train, Y_train)
 
-    w = helpers.logistic_regression(Y_train, X_train, np.zeros(X_train.shape[1]), 1000, 0.0005)
+    
+    #w = helpers.logistic_regression(Y_train, X_train, np.zeros(X_train.shape[1]), 100000, 0.01)
+    # w = helpers.logistic_regression(Y_train, X_train, w, 100000, 0.001)
+    # w = helpers.reg_logistic_regression(Y_train, X_train, 1e-2, np.zeros(X_train.shape[1]), 100000, 0.008)
     #w2 = helpers.logistic_regression(Y_train, X_train, np.random.randn(X_train.shape[1]), 1000, 0.0001)
     #w3 = helpers.logistic_regression(Y_train, X_train, np.random.randn(X_train.shape[1]), 1000, 0.0001)
     #w = (1.0 / 3.0) * (w + w2 + w3)
     # print("changing learning rate")
     # w = helpers.logistic_regression(Y_train, X_train, w, 1000, 0.001)
+    if False:
+        w1 = helpers.reg_logistic_regression(Y_train, X_train, 1e-2, np.zeros(X_train.shape[1]), 50000, 0.008)
+        w2 = helpers.reg_logistic_regression(Y_train, X_train, 1e-3, np.zeros(X_train.shape[1]), 50000, 0.005)
+        w3 = helpers.reg_logistic_regression(Y_train, X_train, 1e-2, np.zeros(X_train.shape[1]), 50000, 0.005)
+        w = (w1 + w2 + w3) / 3.0
 
-    valid_preds = helpers.logistic_function(X_validation.dot(w))
-    valid_preds[valid_preds >= 0.5] = 1.0
-    valid_preds[valid_preds < 0.5] = 0.0
-    print("Final accuracy {}".format(np.sum(valid_preds == Y_validation) / Y_validation.shape[0]))
+    w = helpers.ridge_regression(Y_train, X_train, 0.003)
+
+    # training error
+    loss_train = helpers.compute_loss(Y_train, X_train, w)
+    print("Loss for train data is: ", loss_train)
+
+    # validation error
+    loss_val = helpers.compute_loss(Y_validation, X_validation, w)
+    print("Loss for validation data is: ", loss_val)
+
+    if True:
+        valid_preds = X_validation.dot(w)
+        valid_preds[valid_preds >= 0.5] = 1.0
+        valid_preds[valid_preds < 0.5] = 0.0
+        print("Val accuracy {}".format(np.sum(valid_preds == Y_validation) / Y_validation.shape[0]))
+        valid_preds = X_train.dot(w)
+        valid_preds[valid_preds >= 0.5] = 1.0
+        valid_preds[valid_preds < 0.5] = 0.0
+        print("Train accuracy {}".format(np.sum(valid_preds == Y_train) / Y_train.shape[0]))
+
+
+
+    if False:
+        valid_preds = helpers.logistic_function(X_validation.dot(w))
+        valid_preds[valid_preds >= 0.5] = 1.0
+        valid_preds[valid_preds < 0.5] = 0.0
+        print("Final accuracy {}".format(np.sum(valid_preds == Y_validation) / Y_validation.shape[0]))
 
     # load test data
     Y_test, X_test, indexes = dataset.load_csv_data(TEST_DATA)
+    Y_test[np.where(Y_test==-1)] = 0.0
 
     # pre process test data
+    X_test = dataset.delete_features(X_test, features_to_delete)
     X_test = dataset.preprocess_dataset(X_test)
-    # X_test = dataset.delete_features(X_train, many_missing)
     # X_test = dataset.keep_features(X_test, features_to_keep)
     X_test = add_bias_column(X_test)
     # X_test = preprocessing.normalize(X_test, norm='l2')
     # X_test = poly.fit_transform(X_test)
 
     # build results
-    # Y_test = X_test.dot(w)
-    Y_test = helpers.logistic_function(np.dot(X_test, w))
+    Y_test = X_test.dot(w)
+    print(Y_test[:100])
+    # Y_test = helpers.logistic_function(np.dot(X_test, w))
     Y_test[np.where(Y_test >= 0.5)] = 1.0
     Y_test[np.where(Y_test < 0.5)] = -1.0
+    print(Y_test[:10])
 
     # parse results
     # Y_test = [1 if e >= 0.0 else -1 for e in Y_test]
