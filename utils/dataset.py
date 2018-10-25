@@ -145,19 +145,16 @@ def build_poly(x, degree):
     return new_X
 
 def preprocess_dataset(X):
-    # X = clean_dataset(X)
-    # X = normalize_dataset(X)
     medians = np.median(X, axis=0)
     for r_idx, row in enumerate(X):
         for c_idx, col in enumerate(row):
             if X[r_idx][c_idx] == -999.0:
-                # X[r_idx][c_idx] = np.random.randn()
                 X[r_idx][c_idx] = 0.0
-    # X = feature_engineering(X)
+
     X = build_poly(X, 6)
     X = mean_centering(X)
     X = std_normalization(X)
-    # X = pca_and_whitening(X)
+
     return X
 
 def delete_features(X, features_to_delete):
