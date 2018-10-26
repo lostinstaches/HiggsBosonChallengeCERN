@@ -45,8 +45,10 @@ def mean_centering(X):
     mean = X.mean(axis=0)
     return X - mean
 
-def std_normalization(X):
-    return X / np.std(X, axis=0)
+def std_normalization(X, eps=1e-6):
+    std = np.std(X, axis=0)
+    std += eps
+    return X / std
 
 def build_poly(x, degree):
     """polynomial basis functions for input data x, for j=0 up to j=degree."""
