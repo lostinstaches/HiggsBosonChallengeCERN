@@ -16,7 +16,7 @@ VERBOSE_OUTPUT = False
 X_VALID = None
 Y_VALID = None
 
-def set_valid(x, y):
+def set_validation_dataset(x, y):
     global X_VALID
     global Y_VALID
     X_VALID = x
@@ -79,75 +79,46 @@ def compute_mse_loss(y, tx, w):
     e = y - tx.dot(w)
     return calculate_mse(e)
 
-# y  - target data
-# tx - independend data
-# initial_w - vektor of parameters to optimize ([w0, w1, ..])
-# max_iters - stepsize of optimization 
-# gamma     - learning rate )
 def least_squares_GD(y, tx, initial_w, max_iters, gamma):
     """Gradient descent algorithm using mse."""
-    # Define parameters to store w's for each step for later visualization
-    ws = [initial_w]
-    # Define parameter to store all mse losses for each step for later visualization
-    losses = []
-    # first w values (here [0,0])
     w = initial_w
-    # optimization loop
     for n_iter in range(max_iters):
-        # compute loss, gradient
         grad, err = mse_gradient(y, tx, w)
-        # compute single value mse of all errors err (is a vector of each error for each datapoint)
-        curr_mse_loss = calculate_mse(err)
-        # gradient w's by descent update all parameters
-        w = w - gamma * grad
-        # store w 
-        ws = w
-        # store loss
-        losses = curr_mse_loss
-        print("Gradient Descent({bi}/{ti}): gamma={g} mse-loss={l} ".format(bi=n_iter, ti=max_iters - 1, l=curr_mse_loss, w=w, g=gamma))
-    return losses, ws
+        w -= gamma * grad
+        loss = compute_mse_loss(y, tx, w)
+        if VERBOSE_OUTPUT:
+            print("Gradient Descent({bi}/{ti}): gamma={g} mse-loss={l} ".format(
+                bi=n_iter, ti=max_iters - 1, l=loss, w=w, g=gamma))
+    return w, loss
 
-def least_squares_SGD(y, tx, initial_w, batch_size, max_iters, gamma):
+def least_squares_SGD(y, tx, initial_w, max_iters, gamma):
     """Stochastic gradient descent."""
-    # Define parameters to store w and loss
-    ws = [initial_w]
-    losses = []
     w = initial_w
-    # optimization loop
     for n_iter in range(max_iters):
-        # choose random batch sample set (size according to batch_size)
-        for y_batch, tx_batch in batch_iter(y, tx, batch_size=batch_size, num_batches=1):
-            # compute a stochastic gradient and loss for the random sample batches (n = batch_size)
-            # loss gets ignored here because this is only a sample set of the whole data
+        # Choose one random sample from dataset
+        for y_batch, tx_batch in batch_iter(y, tx, batch_size=1, num_batches=1):
             grad, _ = mse_gradient(y_batch, tx_batch, w)
-            # update w through the stochastic gradient update
-            w = w - gamma * grad
-            # calculate loss over all data
-            loss = compute_loss(y, tx, w)
-            # store w and loss
-            #ws.append(w)
-            #losses.append(loss)
-            ws = w
-
-        print("SGD({bi}/{ti}): loss={l}, w0={w0}, w1={w1}".format(bi=n_iter, ti=max_iters - 1, l=loss, w0=w[0], w1=w[1]))
-    return losses, ws
+            w -= gamma * grad
+            loss = compute_mse_loss(y, tx, w)
+        if VERBOSE_OUTPUT:
+            print("SGD({bi}/{ti}): loss={l}, w0={w0}, w1={w1}".format(
+                bi=n_iter, ti=max_iters - 1, l=loss, w0=w[0], w1=w[1]))
+    return w, loss
 
 def least_squares(y, tx):
-    #normal equations
-    gram_matrix = np.transpose(tx).dot(tx)
-    gram_matrix_inverse = np.linalg.inv(gram_matrix)
-    answer = gram_matrix_inverse.dot(np.transpose(tx))
-    answer = answer.dot(y)
-    return answer
-
+    A = tx.T.dot(tx)
+    b = tx.T.dot(y)
+    w = np.linalg.solve(A, b)
+    return w, compute_mse_loss(y, tx,  w)
 
 def ridge_regression(y, tx, lambda_):
-    aI = lambda_ * np.identity(tx.shape[1])
-    a = tx.T.dot(tx) + aI
+    N = y.shape[0]
+    D = tx.shape[1]
+    l = lambda_ * 2.0 * N
+    A = tx.T.dot(tx) + l * np.eye(D)
     b = tx.T.dot(y)
-    w = np.linalg.solve(a, b)
-    loss = compute_mse_loss(y, tx, w)
-    return w, loss
+    w = np.linalg.solve(A, b)
+    return w, compute_mse_loss(y, tx,  w)
 
 def logistic_function(z):
     return np.exp(z) / (1 + np.exp(z))
@@ -200,8 +171,7 @@ def logistic_regression(y, tx, initial_w, max_iters, gamma):
                 preds[preds >=  0.5] = 1.0
                 preds[preds < 0.5] = 0.0
                 print("Valid accuracy {}".format(np.sum(preds == Y_VALID) / Y_VALID.shape[0]))
-            # print("w {}".format(w))
-    return w
+    return w, logistic_loss(tx, w, y)
 
 def reg_logistic_regression(y, tx, lambda_, initial_w, max_iters, gamma):
     """Logistic regression"""
@@ -222,7 +192,7 @@ def reg_logistic_regression(y, tx, lambda_, initial_w, max_iters, gamma):
                 preds[preds >=  0.5] = 1.0
                 preds[preds < 0.5] = 0.0
                 print("Valid accuracy {}".format(np.sum(preds == Y_VALID) / Y_VALID.shape[0]))
-    return w
+    return w, logistic_loss(tx, w, y, reg=lambda_)
 
 
 class Training(object):
@@ -271,9 +241,12 @@ class Training(object):
         for param in method_params:
             if param not in training_params and param != 'y' and param != 'tx':
                 raise ValueError("Wrong params: {}".format(training_params))
+        params_to_delete = []
         for param in training_params:
             if param not in method_params:
-                del training_params[param]
+                params_to_delete.append(param)
+        for param in params_to_delete:
+            del training_params[param]
         self.params = training_params
 
     def fit(self, X_train, Y_train):
