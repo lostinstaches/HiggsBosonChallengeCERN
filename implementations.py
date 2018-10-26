@@ -1,19 +1,31 @@
 import csv
 import os
 import pickle
+import inspect
 
 import numpy as np
 
 
+# We use globals to make iterative functions display
+# things like validation accuracy conditionally (we
+# must use globals since interface of the function is
+# fixed in project description PDF)
+
+VERBOSE_OUTPUT = False
+
 X_VALID = None
 Y_VALID = None
-
 
 def set_valid(x, y):
     global X_VALID
     global Y_VALID
     X_VALID = x
     Y_VALID = y
+
+def set_verbose_output(be_verbose):
+    global VERBOSE_OUTPUT
+    VERBOSE_OUTPUT = be_verbose
+
 
 def batch_iter(y, tx, batch_size, num_batches=1, shuffle=True):
     """
@@ -129,11 +141,13 @@ def least_squares(y, tx):
     return answer
 
 
-def ridge_regression(y, tx, lamb):
-    aI = lamb * np.identity(tx.shape[1])
+def ridge_regression(y, tx, lambda_):
+    aI = lambda_ * np.identity(tx.shape[1])
     a = tx.T.dot(tx) + aI
     b = tx.T.dot(y)
-    return np.linalg.solve(a, b)
+    w = np.linalg.solve(a, b)
+    loss = compute_mse_loss(y, tx, w)
+    return w, loss
 
 def logistic_function(z):
     return np.exp(z) / (1 + np.exp(z))
@@ -196,12 +210,8 @@ def reg_logistic_regression(y, tx, lambda_, initial_w, max_iters, gamma):
         xw = tx.dot(w)
         preds = logistic_function(xw)
         grad = logistic_gradient(tx, w, y, reg=lambda_)
-        #numeric_grad = numeric_gradient(tx_batch, w, y_batch, logistic_loss)
-        #print("grad {}".format(grad))
-        #print("numeric_grad {}".format(numeric_gradient(tx_batch, w, y_batch, logistic_loss)))
-        #print("both subtracted {}".format(grad - numeric_grad))
         w -= gamma * grad
-        if n_iter % 100 == 0:
+        if n_iter % 100 == 0 and VERBOSE_OUTPUT:
             print("iter {} loss {}".format(n_iter, logistic_loss(tx, w, y, reg=lambda_)))
             preds = logistic_function(tx.dot(w))
             preds[preds >=  0.5] = 1.0
@@ -214,33 +224,91 @@ def reg_logistic_regression(y, tx, lambda_, initial_w, max_iters, gamma):
                 print("Valid accuracy {}".format(np.sum(preds == Y_VALID) / Y_VALID.shape[0]))
     return w
 
-t = Training('least_squares_GD', params)
-t.fit(X_train, y_train)
-predictions = t.predict(X_test)
-
 
 class Training(object):
-	method_names = ['least_squares_GD', 'least_squares_SGD', 'least_squares', 'ridge_regression', 'logistic_regression', 'reg_logistic_regression']
-	params = {
-		'initial_w': None,
-		'max_iters': None,
-		'gamma': None,
-		'max_iters': None,
-		'lambda_': None,
-		'poly_features': 6,
-		'mean_subtraction': True,
-		'std_division': True,
-		'verbose': True,
-	}
+    METHOD_NAMES = {
+        'least_squares_GD': least_squares_GD,
+        'least_squares_SGD': least_squares_SGD,
+        'least_squares': least_squares,
+        'ridge_regression': ridge_regression,
+        'logistic_regression': logistic_regression,
+        'reg_logistic_regression': reg_logistic_regression,
+    }
 
-	def __init__(self, method_name, params):
-		pass
+    MSE_LOSS_METHODS = set([
+        'least_squares_GD',
+        'least_squares_SGD',
+        'least_squares',
+        'ridge_regression',
+    ])
+    LOGISTIC_LOSS_METHODS = set([
+        'logistic_regression',
+        'reg_logistic_regression'
+    ])
 
-	def fit(self, X_train, y_train):
-		if 'verbose':
-			ekwoakeoawk
-		return w, loss
+    training_params = {
+        'initial_w': None,
+        'max_iters': None,
+        'gamma': None,
+        'max_iters': None,
+        'lambda_': None,
+    }
 
-	def predict(self, X_test):
-		return Y_test
+    def __init__(self, method_name, training_params):
+        if method_name not in self.METHOD_NAMES:
+            raise ValueError("Wrong method: {}".format(method_name))
+        self.method_name = method_name
+        # Checks if all params were defined, save them for later
+        self.prepare_and_save_training_params(training_params)
+        self.w = None
+
+    def _get_function_param_names(self, fn):
+        return inspect.getargspec(fn)[0]
+
+    def prepare_and_save_training_params(self, training_params):
+        method_fn = self.METHOD_NAMES[self.method_name]
+        method_params = self._get_function_param_names(method_fn)
+        for param in method_params:
+            if param not in training_params and param != 'y' and param != 'tx':
+                raise ValueError("Wrong params: {}".format(training_params))
+        for param in training_params:
+            if param not in method_params:
+                del training_params[param]
+        self.params = training_params
+
+    def fit(self, X_train, Y_train):
+        method_fn = self.METHOD_NAMES[self.method_name]
+        w, loss = method_fn(Y_train, X_train, **self.params)
+        self.w = w
+        return w, loss
+
+    def eval(self, X_valid, Y_valid):
+        if self.w is None:
+            RuntimeError("eval must be called after fit")
+        use_logistic_loss = self.method_name in self.LOGISTIC_LOSS_METHODS
+        if use_logistic_loss:
+            preds = logistic_function(X_valid.dot(self.w))
+            reg = 0.0
+            if 'lambda_' in self.params:
+                reg = self.params['lambda_']
+            loss = logistic_loss(X_valid, self.w, Y_valid, reg)
+        else:
+            preds = X_valid.dot(self.w)
+            loss = compute_mse_loss(Y_valid, X_valid, self.w)
+        preds[preds >= 0.5] = 1.0
+        preds[preds < 0.5] = 0.0
+        acc = np.sum(preds == Y_valid) / Y_valid.shape[0]
+        return acc, loss
+
+    def predict(self, X_test):
+        if self.w is None:
+            RuntimeError("predict must be called after fit")
+        use_logistic_loss = self.method_name in self.LOGISTIC_LOSS_METHODS
+        if use_logistic_loss:
+            Y_test = logistic_function(X_test.dot(self.w))
+        else:
+            Y_test = X_test.dot(self.w)
+        Y_test[Y_test >= 0.5] = 1.0
+        Y_test[Y_test < 0.5] = 0.0
+        return Y_test
 
