@@ -48,7 +48,7 @@ def least_squares_GD(y, tx, initial_w, max_iters, gamma):
         if VERBOSE_OUTPUT:
             print("Gradient Descent({bi}/{ti}): gamma={g} mse-loss={l} ".format(
                 bi=n_iter, ti=max_iters - 1, l=curr_mse_loss, w=w, g=gamma))
-    return curr_mse_loss, w
+    return w, curr_mse_loss
 
 def batch_iter(y, tx, batch_size, num_batches=1, shuffle=True):
     """
@@ -94,7 +94,7 @@ def least_squares_SGD(y, tx, initial_w, batch_size, max_iters, gamma):
         if VERBOSE_OUTPUT:
             print("SGD({bi}/{ti}): mse-loss={l}, gamma={gamma}".format(
                 bi=n_iter, ti=max_iters - 1, l=loss, gamma=gamma))
-    return loss, w
+    return w, loss
 
 def least_squares(y, tx):
     A = np.transpose(tx).dot(tx)

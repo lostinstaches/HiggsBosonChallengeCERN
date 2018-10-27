@@ -105,7 +105,7 @@ def least_squares_GD(y, tx, initial_w, max_iters, gamma):
         # store loss
         losses = curr_mse_loss
         print("Gradient Descent({bi}/{ti}): gamma={g} mse-loss={l} ".format(bi=n_iter, ti=max_iters - 1, l=curr_mse_loss, w=w, g=gamma))
-    return losses, ws
+    return ws, losses
 
 def least_squares_SGD(y, tx, initial_w, batch_size, max_iters, gamma):
     """Stochastic gradient descent."""
@@ -123,14 +123,15 @@ def least_squares_SGD(y, tx, initial_w, batch_size, max_iters, gamma):
             # update w through the stochastic gradient update
             w = w - gamma * grad
             # calculate loss over all data
-            loss = compute_loss(y, tx, w)
+            curr_mse_loss = compute_mse_loss(y, tx, w)
             # store w and loss
             #ws.append(w)
             #losses.append(loss)
+            losses = curr_mse_loss
             ws = w
 
-        print("SGD({bi}/{ti}): loss={l}, w0={w0}, w1={w1}".format(bi=n_iter, ti=max_iters - 1, l=loss, w0=w[0], w1=w[1]))
-    return losses, ws
+        print("SGD({bi}/{ti}): loss={l}, w0={w0}, w1={w1}".format(bi=n_iter, ti=max_iters - 1, l=curr_mse_loss, w0=w[0], w1=w[1]))
+    return ws, losses
 
 def least_squares(y, tx):
     #normal equations
