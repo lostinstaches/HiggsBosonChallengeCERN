@@ -5,21 +5,16 @@ import numpy as np
 
 def load_csv_data(data_path, sub_sample=False):
     """Loads data and returns y (class labels), tX (features) and ids (event ids)"""
-    with open(data_path, "r") as f:
-        debug_l = [x.strip() for x in f.readlines()[0].split(",")]
-    #for idx, fname in enumerate(debug_l):
-        #print("{} - {}".format(fname, idx))
-
     y = np.genfromtxt(data_path, delimiter=",", skip_header=1, dtype=str, usecols=1)
     x = np.genfromtxt(data_path, delimiter=",", skip_header=1)
     ids = x[:, 0].astype(np.int)
     input_data = x[:, 2:]
 
-    # convert class labels from strings to binary (-1,1)
+    # Convert class labels from strings to {-1, 1}
     yb = np.ones(len(y))
     yb[np.where(y=='b')] = -1
 
-    # sub-sample
+    # Sub-sample
     if sub_sample:
         yb = yb[::50]
         input_data = input_data[::50]
@@ -28,12 +23,7 @@ def load_csv_data(data_path, sub_sample=False):
     return yb, input_data, ids
 
 def create_csv_submission(ids, y_pred, name):
-    """
-    Creates an output file in csv format for submission to kaggle
-    Arguments: ids (event ids associated with each prediction)
-               y_pred (predicted class labels)
-               name (string name of .csv output file to be created)
-    """
+    """Creates an output file in csv format for submission to kaggle"""
     with open(name, 'w') as csvfile:
         fieldnames = ['Id', 'Prediction']
         writer = csv.DictWriter(csvfile, delimiter=",", fieldnames=fieldnames)
@@ -51,7 +41,7 @@ def std_normalization(X, eps=1e-6):
     return X / std
 
 def build_poly(x, degree):
-    """polynomial basis functions for input data x, for j=0 up to j=degree."""
+    """Polynomial basis functions for input data x, for j=1 up to j=degree"""
     new_X = np.zeros((x.shape[0], x.shape[1] * (degree)))
     for i in range(1, degree+1):
         new_X[:,x.shape[1]*(i-1):x.shape[1]*(i)] = x ** i
@@ -73,6 +63,7 @@ def preprocess_dataset(X, poly_features, use_mean_centering=True, use_std_normal
     return X
 
 def delete_features(X, features_to_delete):
+    """Deletes X[:,idx] if idx is in features_to_delete"""
     features_to_delete = set(features_to_delete)
     final_features_num = X.shape[1] - len(features_to_delete)
     new_X = np.zeros((X.shape[0], final_features_num), dtype=np.float32)
@@ -84,6 +75,7 @@ def delete_features(X, features_to_delete):
     return new_X
 
 def keep_features(X, features_to_keep):
+    """Returns X where only columns from features_to_keep are preserved"""
     features_to_keep = set(features_to_keep)
     final_features_num = len(features_to_keep)
     new_X = np.zeros((X.shape[0], final_features_num), dtype=np.float32)
@@ -95,11 +87,15 @@ def keep_features(X, features_to_keep):
     return new_X
 
 def split_data(y, x, ratio, seed=1):
+    """Random data split"""
+    np.random.seed(seed)
+
     N = y.shape[0]
     N_train = int(N * ratio)
 
     random_indices = np.random.permutation(N)
     train_indices = random_indices[:N_train]
     val_indices  = random_indices[N_train:]
+    print(val_indices)
 
     return y[train_indices], y[val_indices], x[train_indices], x[val_indices]
