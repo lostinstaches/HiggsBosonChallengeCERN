@@ -65,7 +65,7 @@ if __name__ == '__main__':
             dataset.split_data(ds[1], ds[0], ratio_for_splitting)
         implementations.set_validation_dataset(X_validation, Y_validation)
 
-        model = implementations.Training('reg_logistic_regression', {
+        model = implementations.Training('logistic_regression', {
             'lambda_': 0.005,
             'initial_w': np.zeros(X_train.shape[1]),
             'max_iters': 10000,
