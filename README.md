@@ -28,6 +28,5 @@ choice.
 The dataset contains 30 learnable features and 250000
 training examples. The examples are labeled by ’s’, if they are
 positive example, and ’b’ if they are negative example. The
-problem is therefore a straightforward classification problem
-- we want to predict a label for each example based on all 30
+problem is therefore a straightforward classification problem we want to predict a label for each example based on all 30
 features available.
